@@ -1,9 +1,9 @@
-import { clerkMiddleware, requireAuth, getAuth } from "@clerk/express";
 import { Inngest } from "inngest";
+import User from '../models/User.js'
 
 
 // Create a client to send and receive events
-export const inngest = new Inngest({ id: "my-app" });
+export const inngest = new Inngest({ id: "movie-ticket-booking" });
 
 
 // Inngest function to save user data to database
