@@ -1,4 +1,4 @@
-import { User } from "@clerk/express";
+import { clerkMiddleware, requireAuth, getAuth } from "@clerk/express";
 import { Inngest } from "inngest";
 
 
