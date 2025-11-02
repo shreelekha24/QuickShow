@@ -23,8 +23,8 @@ await connectDB();
 app.use('/api/stripe',express.raw({type: 'application/json'}),stripeWebhooks)
 
 // middleware
-app.use(express.json());
 app.use(cors())
+app.use(express.json());
 app.use(clerkMiddleware())
 
 // api routes
