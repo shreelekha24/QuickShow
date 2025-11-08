@@ -1,4 +1,4 @@
-import { clerkClient } from "@clerk/express";
+import { clerkClient,getAuth } from "@clerk/express";
 import Booking from "../models/Booking.js";
 import Movie from "../models/Movie.js";
 

@@ -7,7 +7,6 @@ import sendEmail from "../configs/nodeMailer.js";
 // Create a client to send and receive events
 export const inngest = new Inngest({ id: "movie-ticket-booking" });
 
-
 // Inngest function to save user data to database
 const syncUserCreation=inngest.createFunction(
     {id: 'sync-user-from-clerk'},
@@ -16,7 +15,7 @@ const syncUserCreation=inngest.createFunction(
       const {id,first_name,last_name,email_addresses,image_url}=event.data
       const userData={
         _id: id,
-        email:email_addresses[0].email_addresses,
+        email:email_addresses[0].email_address,
         name:first_name + ' ' + last_name,
         image: image_url
       }
@@ -32,7 +31,7 @@ const syncUserDeletion=inngest.createFunction(
     {event:'clerk/user.deleted'},
     async({event})=>{
       const {id}=event.data
-      await User.findByIdAndDelete()
+      await User.findByIdAndDelete(id)
       }
 )
 
@@ -43,44 +42,50 @@ const syncUserUpdation=inngest.createFunction(
     {id: 'update-user-from-clerk'},
     {event:'clerk/user.updated'},
     async({event})=>{
-      const {id,first_name,last_name,email_addresses,image_url}=event.data
+      const {id,first_name,last_name,email_addresses,image_url}=event.data?.data
       const userData={
         _id: id,
-        email:email_addresses[0].email_addresses,
+        email:email_addresses[0].email_address,
         name:first_name + ' ' + last_name,
         image: image_url
       }
-      await User.findByIdAndUpdate(id,userData)
+      await User.findByIdAndUpdate(id,userData, { upsert: true })
     }
 )
 
 
 // Inngest Function to cancel booking and release seats of show after 10 minutes of booking created if payment is not made
-const releaseSeatsAndDeleteBooking=inngest.createFunction(
-  {id:'release-seats-delete-booking'},
-  {event:"app/checkpayment"},
-  async({event,step})=>{
-    const tenMintuesLater=new Date(Date.now()+ 10*60*1000);
-    await step.sleepUntil('wait-for-10-minutes',tenMintuesLater);
+const releaseSeatsAndDeleteBooking = inngest.createFunction(
+  { id: "release-seats-delete-booking" },
+  { event: "app/checkpayment" },
+  async ({ event, step }) => {
 
-    await step.run('check-payment-status',async()=>{
-      const bookingId=event.data.bookingId;
-      const booking=await Booking.findById(bookingId)
+    const tenMinutesLater = new Date(Date.now() + 10 * 60 * 1000);
+    await step.sleepUntil("wait-for-10-minutes", tenMinutesLater);
 
-      //if payment not made release seats and delete booking
-      if(!booking.isPaid)
-      {
-        const show=await Show.findById(booking.show)
-        booking.bookedSeats.forEach((seat)=>{
-          delete show.occupiedSeats[seat];
-        });
-        show.markModified('occupiedSeats');
-        await show.save();
-        await Booking.findByIdAndDelete(booking._id)
+    await step.run("check-payment-status", async () => {
+      const bookingId = event.data.bookingId;
+      const booking = await Booking.findById(bookingId);
+
+      if (!booking) return console.log("Booking not found");
+
+      // if payment not made release seats and delete booking
+      if (!booking.isPaid) {
+        const show = await Show.findById(booking.show);
+        if (show && booking.bookedSeats) {
+          booking.bookedSeats.forEach((seat) => {
+            delete show.occupiedSeats[seat];
+          });
+          show.markModified("occupiedSeats");
+          await show.save();
+        }
+
+        await Booking.findByIdAndDelete(booking._id);
+        console.log("Booking canceled and seats released:", bookingId);
       }
-    })
+    });
   }
-)
+);
 
 
 //inngest function to send email when user books a show 

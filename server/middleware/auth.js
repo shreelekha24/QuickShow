@@ -1,9 +1,9 @@
-import {clerkClient} from "@clerk/clerk-sdk-node";
+import {getAuth,clerkClient} from "@clerk/express";
 
 
 export const protectAdmin=async(req,res,next)=>{
     try {
-        const { userId } = req.auth();
+       const { userId } = getAuth(req);
 
         const user=await clerkClient.users.getUser(userId)
 
