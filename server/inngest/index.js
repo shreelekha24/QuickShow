@@ -4,8 +4,11 @@ import Booking from '../models/Booking.js'
 import Show from '../models/Show.js'
 import sendEmail from "../configs/nodeMailer.js";
 
+
+
 // Create a client to send and receive events
 export const inngest = new Inngest({ id: "movie-ticket-booking" });
+
 
 // Inngest function to save user data to database
 const syncUserCreation=inngest.createFunction(

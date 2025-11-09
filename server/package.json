@@ -20,7 +20,7 @@
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "inngest": "^3.44.3",
-    "mongoose": "^7.6.0",
+    "mongoose": "^8.19.3",
     "nodemailer": "^7.0.10",
     "stripe": "^19.2.0",
     "svix": "^1.81.0",
