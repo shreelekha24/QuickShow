@@ -36,28 +36,22 @@ const SeatLayout = () => {
 
 
 
-  const handleSeatClick = (seatId) => {
-  if (!selectedTime) {
-    return toast("Please select time first");
+  const handleSeatClick=(seatId)=>{
+     if(!selectedTime)
+     {
+      return toast("Please select time first");
+     }
+     if(!selectedSeats.includes(seatId) && selectedSeats.length > 4)
+     {
+      return toast("You can only select 5 seats")
+     }
+     if(occupiedSeats.includes(seatId))
+     {
+        return toast('This seat is already booked')
+     }
+     setSelectedSeats(prev=>prev.includes(seatId) ? prev.filter(seat => seat!==seatId) : [...prev,seatId])
+
   }
-
-  // ❌ If seat is already booked, don't let user select it
-  if (occupiedSeats.includes(seatId)) {
-    return toast("This seat is already booked");
-  }
-
-  if (!selectedSeats.includes(seatId) && selectedSeats.length > 4) {
-    return toast("You can only select 5 seats");
-  }
-
-  // Toggle selection
-  setSelectedSeats(prev =>
-    prev.includes(seatId)
-      ? prev.filter(seat => seat !== seatId)
-      : [...prev, seatId]
-  );
-};
-
 
   const renderSeats=(row,count=9)=>(
     <div>
