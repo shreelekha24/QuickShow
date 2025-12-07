@@ -36,39 +36,56 @@ const SeatLayout = () => {
 
 
 
-  const handleSeatClick=(seatId)=>{
-     if(!selectedTime)
-     {
-      return toast("Please select time first");
-     }
-     if(!selectedSeats.includes(seatId) && selectedSeats.length > 4)
-     {
-      return toast("You can only select 5 seats")
-     }
-     if(occupiedSeats.includes(seatId))
-     {
-        return toast('This seat is already booked')
-     }
-     setSelectedSeats(prev=>prev.includes(seatId) ? prev.filter(seat => seat!==seatId) : [...prev,seatId])
-
+  const handleSeatClick = (seatId) => {
+  if (!selectedTime) {
+    return toast("Please select time first");
   }
 
-  const renderSeats=(row,count=9)=>(
+  // ❌ If seat is already booked, don't let user select it
+  if (occupiedSeats.includes(seatId)) {
+    return toast("This seat is already booked");
+  }
+
+  if (!selectedSeats.includes(seatId) && selectedSeats.length > 4) {
+    return toast("You can only select 5 seats");
+  }
+
+  // Toggle selection
+  setSelectedSeats(prev =>
+    prev.includes(seatId)
+      ? prev.filter(seat => seat !== seatId)
+      : [...prev, seatId]
+  );
+};
+
+const renderSeats = (row, count = 9) => (
+  <div>
     <div>
-      <div>
-        {Array.from({length: count},(_, i) => {
-          const seatId= `${row}${i + 1}` ;
-          return (
-            <button key={seatId} onClick={()=>handleSeatClick(seatId)} className={`h-8 w-8 rounded border border-primary/60 cursor-pointer
-             ${selectedSeats.includes(seatId) && "bg-primary text-white"}
-             ${occupiedSeats.includes(seatId) && "opacity-50"}`}>
-              {seatId}
-            </button>
-          )
-        })}
-      </div>
+      {Array.from({ length: count }, (_, i) => {
+        const seatId = `${row}${i + 1}`;
+        const isOccupied = occupiedSeats.includes(seatId);
+        const isSelected = selectedSeats.includes(seatId);
+
+        return (
+          <button
+            key={seatId}
+            type="button"
+            disabled={isOccupied} // ✅ disable click at browser level
+            onClick={() => !isOccupied && handleSeatClick(seatId)} // extra safety
+            className={`h-8 w-8 rounded border border-primary/60 text-sm
+              flex items-center justify-center
+              ${isSelected && !isOccupied ? "bg-primary text-white" : ""}
+              ${isOccupied ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+            `}
+          >
+            {seatId}
+          </button>
+        );
+      })}
     </div>
-  )
+  </div>
+);
+
 
 
   const getOccupiedSeats=async()=>{
