@@ -42,7 +42,7 @@ export const addShow=async(req,res)=>{
         const movieCreditsData=movieCreditsResponse.data;
 
         const movieDetails={
-        // _id:movie._id,
+        _id:movieId.toString(),
         title:movieApiData.title,
         overview:movieApiData.overview,
         poster_path:movieApiData.poster_path,
