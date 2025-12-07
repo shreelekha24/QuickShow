@@ -20,7 +20,8 @@ const checkSeatAvailability = async (showId, selectedSeats) => {
 
 export const createBooking = async (req, res) => {
     try {
-        const { userId } = req.auth();
+        const mongoUser = req.user;          // the MongoDB user doc
+        const userId = mongoUser._id;  
         const { showId, selectedSeats } = req.body;
         const { origin } = req.headers;
 
