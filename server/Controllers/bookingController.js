@@ -6,11 +6,13 @@ import { inngest } from "../inngest/index.js"
 // Function to check availability of selected seats for a movie
 const checkSeatAvailability = async (showId, selectedSeats) => {
     try {
-        const showData = await Show.findById(showId)
+        const showData = await Show.findById(showId).lean()
         if (!showData) return false;
         
         const occupiedSeats = showData.occupiedSeats;
-        const isAnySeatTaken = selectedSeats.some(seat => occupiedSeats[seat])
+        const isAnySeatTaken = selectedSeats.some((seat) =>
+      Object.prototype.hasOwnProperty.call(occupiedSeats, seat)
+    );
         return !isAnySeatTaken;
     } catch (error) {
         console.log(error.message);
@@ -55,12 +57,15 @@ export const createBooking = async (req, res) => {
         console.log('✅ Booking created:', booking._id);
 
         // Mark seats as occupied
-        selectedSeats.map((seat) => {
-            showData.occupiedSeats[seat] = userId;
-        })
+        // Mark seats as occupied
+        selectedSeats.forEach((seat) => {
+       showData.occupiedSeats[seat] = userId;
+      });
 
-        showData.markModified('occupiedSeats');
-        await showData.save();
+       showData.markModified('occupiedSeats');
+       await showData.save();
+
+      console.log('Updated occupiedSeats:', showData.occupiedSeats);
 
         // Initialize Stripe
         const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY)
