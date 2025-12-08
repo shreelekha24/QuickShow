@@ -63,12 +63,12 @@ export const stripeWebhooks = async (request, response) => {
                 console.log('Updated isPaid:', updatedBooking.isPaid);
 
                 // Send confirmation email via Inngest
-               /* await inngest.send({
+               await inngest.send({
                     name: "app/show.booked",
                     data: { bookingId: bookingId }
                 });
 
-                console.log('✅ Inngest event sent');*/
+                console.log('✅ Inngest event sent');
                 break;
             }
 
