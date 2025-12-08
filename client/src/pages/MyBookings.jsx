@@ -35,7 +35,15 @@ const MyBookings = () => {
    getMyBookings()
     }
   },[user])
+ 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const isSuccess = params.get('success');
 
+    if (user && isSuccess) {
+      getMyBookings();
+    }
+  }, [location.search, user]);
 
   return !isLoading ? (
     <div className='relative px-6 md:px-16 lg:px-40 pt-30 md:pt-40 min-h-[80vh] '>
