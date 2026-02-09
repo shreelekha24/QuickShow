@@ -1,6 +1,6 @@
 import Show from "../models/Show.js"
 import Booking from "../models/Booking.js"
-import Stripe from 'stripe'
+import stripe from 'stripe'
 import { inngest } from "../inngest/index.js"
 
 // Function to check availability of selected seats for a movie
@@ -68,7 +68,7 @@ export const createBooking = async (req, res) => {
       console.log('Updated occupiedSeats:', showData.occupiedSeats);
 
         // Initialize Stripe
-        const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY)
+        const stripeInstance = new stripe(process.env.STRIPE_SECRET_KEY)
 
         // Create line items for Stripe
         const line_items = [{
@@ -87,12 +87,11 @@ export const createBooking = async (req, res) => {
 
         // ✅ CRITICAL: Create checkout session WITH payment_intent_data metadata
         const session = await stripeInstance.checkout.sessions.create({
-            payment_method_types: ['card'],
+            success_url: `${origin}/loading/my-bookings`,
+            cancel_url: `${origin}/my-bookings`,
             line_items: line_items,
             mode: 'payment',
             
-            success_url: `${origin}/loading/my-bookings?status=success`,
-            cancel_url: `${origin}/my-bookings?status=cancel`,
             
             // ✅ Metadata for the checkout session
             metadata: {
@@ -116,7 +115,7 @@ export const createBooking = async (req, res) => {
         booking.paymentLink = session.url;
         await booking.save();
 
-        console.log('✅ Booking updated with payment link');
+        res.json({success: true,url: session.url})
 
         // Run Inngest scheduler to check payment status after 10 minutes
         await inngest.send({
