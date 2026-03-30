@@ -3,13 +3,21 @@ import Movie from '../models/Movie.js'
 import Show from "../models/Show.js";
 import { inngest } from "../inngest/index.js";
 
+const tmdbClient = axios.create({
+    baseURL: "https://api.themoviedb.org/3",
+    proxy: false,
+    timeout: 15000,
+});
+
+const tmdbHeaders = () => ({
+    Authorization: `Bearer ${process.env.TMDB_API_KEY}`,
+});
+
 // API to get now playing movies from TMDB API
 export const getNowPlayingMovies=async(req,res)=>{
     try {
-       const { data } = await axios.get("https://api.themoviedb.org/3/movie/now_playing", {
-      headers: {
-        Authorization: `Bearer ${process.env.TMDB_API_KEY}` // must be V4 access token
-      }
+       const { data } = await tmdbClient.get("/movie/now_playing", {
+      headers: tmdbHeaders()
     });
 
         const movies=data.results;
@@ -32,10 +40,10 @@ export const addShow=async(req,res)=>{
 
         if(!movie){
             const [movieDetailsResponse,movieCreditsResponse]=await Promise.all([
-                axios.get(`https://api.themoviedb.org/3/movie/${movieId}`,{
-        headers: {Authorization: `Bearer ${process.env.TMDB_API_KEY}`} }),
-        axios.get(`https://api.themoviedb.org/3/movie/${movieId}/credits`,{
-        headers: {Authorization: `Bearer ${process.env.TMDB_API_KEY}`}
+                tmdbClient.get(`/movie/${movieId}`,{
+        headers: tmdbHeaders() }),
+        tmdbClient.get(`/movie/${movieId}/credits`,{
+        headers: tmdbHeaders()
         }) ])
 
         const movieApiData=movieDetailsResponse.data;

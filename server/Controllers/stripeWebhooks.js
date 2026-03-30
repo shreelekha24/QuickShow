@@ -1,8 +1,10 @@
 import Stripe from 'stripe';
 import Booking from '../models/Booking.js';
-// import { inngest } from '../inngest/index.js';
+import { inngest } from '../inngest/index.js';
 
-const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
+const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: "2026-02-25.clover",
+});
 
 export const stripeWebhooks = async (request, response) => {
   const sig = request.headers['stripe-signature'];

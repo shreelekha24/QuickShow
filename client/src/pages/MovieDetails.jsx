@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { dummyDateTimeData, dummyShowsData } from '../assets/assets';
 import BlurCircle from '../components/BlurCircle';
 import { Heart, PlayCircle, StarIcon } from 'lucide-react';
 import timeFormat from '../lib/timeFormat';
@@ -14,20 +13,29 @@ const MovieDetails = () => {
   const navigate=useNavigate();
   const {id}=useParams();
   const [show,setshow]=useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const {shows,axios,getToken,user,fetchFavoriteMovie,favoriteMovies,image_base_url}=useAppContext()
  
-  const getShow=async()=>{
+  const getShow=useCallback(async()=>{
     try {
+      setIsLoading(true)
       const {data}=await axios.get(`/api/show/${id}`)
-      if(data.success)
+      if(data.success && data.movie)
       {
         setshow(data)
+      } else {
+        setshow(null)
+        toast.error(data.message || 'Movie details are not available right now.')
       }
     } catch (error) {
       console.log(error)
+      setshow(null)
+      toast.error('Failed to load movie details.')
+    } finally {
+      setIsLoading(false)
     }
-  }
+  }, [axios, id])
 
   const handleFavorite=async()=>{
     try {
@@ -48,14 +56,17 @@ const MovieDetails = () => {
 
   useEffect(()=>{
      getShow()
-  },[id])
+  },[id, getShow])
 
+  if (isLoading) {
+    return <Loading/>
+  }
 
-  return show ?(
+  return show?.movie ?(
     <div className='px-6 md:px-16 lg:px-40 pt-30 md:pt-50'>
       <div className='flex flex-col md:flex-row gap-8 max-w-6xl mx-auto'>
 
-         <img src={image_base_url + show.movie.poster_path} alt="" className='max-md:mx-auto rounded-xl h-104 max-w-70 object-cover' />
+         <img src={image_base_url + show.movie.poster_path} alt={show.movie.title} className='max-md:mx-auto rounded-xl h-104 max-w-70 object-cover' />
          
          <div className='relative flex flex-col gap-3'>
           <BlurCircle top="-100px" left="-100px"/>
@@ -63,11 +74,11 @@ const MovieDetails = () => {
           <h1 className='text-4xl font-semibold max-w-96 text-balance'>{show.movie.title}</h1>
           <div className='flex items-center gap-2 text-gray-300'>
             <StarIcon className='w-5 h-5 text-primary fill-primary'/>
-            {show.movie.vote_average.toFixed(1)} User Rating
+            {show.movie.vote_average?.toFixed(1) || '0.0'} User Rating
           </div>
           <p className='text-gray-400 mt-2 text-sm leading-tight max-w-xl'>{show.movie.overview}</p>
           <p>
-            {timeFormat(show.movie.runtime)} . {show.movie.genres.map(genre=>genre.name).join(", ")}.{show.movie.release_date.split("-")[0]}
+            {timeFormat(show.movie.runtime)} . {(show.movie.genres || []).map(genre=>genre.name).join(", ")}. {show.movie.release_date?.split("-")[0]}
           </p>
           
           <div className='flex items-center flex-wrap gap-4 mt-4'>
@@ -87,7 +98,7 @@ const MovieDetails = () => {
 
      <div className='overflow-x-auto no-scrollbar mt-8 pb-4'>
       <div className='flex items-center gap-4 w-max px-4'>
-        {show.movie.casts.slice(0,12).map((cast,index)=>(
+        {(show.movie.casts || []).slice(0,12).map((cast,index)=>(
           <div key={index} className='flex flex-col items-center text-center'>
             <img src={image_base_url+cast.profile_path} alt="" className='rounded-full h-20 md:h-20 aspect-square object-cover'/>
             <p className='font-medium text-xs mt-3'>{cast.name}</p>
@@ -101,7 +112,7 @@ const MovieDetails = () => {
     <p className='text-lg font-medium mt-20 mb-8 '>You May Also Like</p>
 
      <div className='flex flex-wrap max-sm:justify-center gap-8'>
-         {shows.slice(0,4).map((movie,index)=>(
+         {shows.filter((movie) => movie._id !== id).slice(0,4).map((movie,index)=>(
           <MovieCard key={index} movie={movie}/>
          ))}
      </div>
@@ -118,7 +129,12 @@ const MovieDetails = () => {
     
 
   ) : (
-    <Loading/>
+    <div className='px-6 md:px-16 lg:px-40 pt-30 md:pt-50 min-h-[70vh] flex items-center justify-center'>
+      <div className='text-center'>
+        <h1 className='text-2xl font-semibold'>Movie not found</h1>
+        <p className='text-gray-400 mt-3'>This movie is unavailable or its show details have not been added yet.</p>
+      </div>
+    </div>
   )
 }
 

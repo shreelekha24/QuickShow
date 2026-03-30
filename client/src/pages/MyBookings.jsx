@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import Loading from '../components/Loading';
 import BlurCircle from '../components/BlurCircle';
 import timeFormat from '../lib/timeFormat';
 import { dateFormat } from '../lib/dateFormat';
 import { useAppContext } from '../context/AppContext';
+import toast from 'react-hot-toast';
 
 const MyBookings = () => {
   const { axios, getToken, user, image_base_url } = useAppContext();
@@ -15,7 +16,17 @@ const MyBookings = () => {
   const [bookings, setbookings] = useState([]);
   const [isLoading, setisLoading] = useState(true);
 
-  const getMyBookings = async () => {
+  const verifyBookingPayment = useCallback(async (bookingId) => {
+    const { data } = await axios.post(
+      '/api/booking/verify-payment',
+      { bookingId },
+      { headers: { Authorization: `Bearer ${await getToken()}` } }
+    );
+
+    return data;
+  }, [axios, getToken]);
+
+  const getMyBookings = useCallback(async () => {
     try {
       const { data } = await axios.get('/api/user/bookings', {
         headers: { Authorization: `Bearer ${await getToken()}` },
@@ -27,24 +38,43 @@ const MyBookings = () => {
       console.log(error);
     }
     setisLoading(false);
-  };
+  }, [axios, getToken]);
 
   // 1) Initial load when user is ready
   useEffect(() => {
     if (user) {
       getMyBookings();
+      return;
     }
-  }, [user]);
+
+    setisLoading(false);
+  }, [user, getMyBookings]);
 
   // 2) Refetch when Stripe redirects back with ?success=true
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const isSuccess = params.get('success');
+    const isCanceled = params.get('canceled');
 
-    if (user && isSuccess) {
-      getMyBookings();
+    const syncSuccessfulPayment = async () => {
+      if (user && isSuccess) {
+        const bookingId = params.get('bookingId');
+        const result = await verifyBookingPayment(bookingId);
+
+        if (result.success && result.isPaid) {
+          toast.success('Payment completed successfully.');
+        }
+
+        getMyBookings();
+      }
+    };
+
+    syncSuccessfulPayment();
+
+    if (user && isCanceled) {
+      toast('Payment was canceled. You can try again from My Bookings.');
     }
-  }, [location.search, user]);
+  }, [location.search, user, getMyBookings, verifyBookingPayment]);
 
   // Optional: refetch when window/tab regains focus (covers new-tab Stripe)
   useEffect(() => {
@@ -56,7 +86,7 @@ const MyBookings = () => {
 
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, [user]);
+  }, [user, getMyBookings]);
 
   return !isLoading ? (
     <div className='relative px-6 md:px-16 lg:px-40 pt-30 md:pt-40 min-h-[80vh] '>

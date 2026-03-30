@@ -26,6 +26,10 @@ const bookingSchema = new mongoose.Schema({
     paymentLink: {
         type: String,
         default: ""
+    },
+    checkoutSessionId: {
+        type: String,
+        default: ""
     }
 }, { timestamps: true });
 

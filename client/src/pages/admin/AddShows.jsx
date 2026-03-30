@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from 'react'
-import { dummyShowsData } from '../../assets/assets';
+import React, { useCallback, useEffect, useState } from 'react'
 import Loading from '../../components/Loading';
 import Ttile from '../../components/admin/Ttile';
 import { CheckIcon, DeleteIcon, StarIcon } from 'lucide-react';
@@ -21,21 +20,34 @@ const AddShows = () => {
       const [dateTimeInput,setdateTimeInput]=useState("");
       const [showPrice,setshowPrice]=useState("");
       const [addingshow,setaddingshow]=useState(false);
+      const [isLoadingMovies, setIsLoadingMovies] = useState(true);
+      const [loadError, setLoadError] = useState("");
       
   
-      const fetchnowPlayingMovies=async()=>{
+      const fetchnowPlayingMovies=useCallback(async()=>{
          try {
+          setIsLoadingMovies(true)
+          setLoadError("")
           const {data}=await axios.get('/api/show/now-playing',{
             headers:{Authorization:`Bearer ${await getToken()}`}})
 
             if(data.success)
             {
               setnowPlayingMovies(data.movies)
+            } else {
+              setnowPlayingMovies([])
+              setLoadError(data.message || 'Failed to load now playing movies.')
+              toast.error(data.message || 'Failed to load now playing movies.')
             }
          } catch (error) {
-          console.error('Error fetching movies:',error)
+           console.error('Error fetching movies:',error)
+           setnowPlayingMovies([])
+           setLoadError(error.response?.data?.message || error.message || 'Failed to load now playing movies.')
+           toast.error(error.response?.data?.message || 'Failed to load now playing movies.')
+         } finally {
+          setIsLoadingMovies(false)
          }
-        }
+        }, [axios, getToken])
 
         const handleDateTimeAdd=()=>{
           if(!dateTimeInput) return;
@@ -101,8 +113,30 @@ const AddShows = () => {
           if(user){ 
            fetchnowPlayingMovies()
           }
-        },[user])
+        },[user, fetchnowPlayingMovies])
       
+
+  if (isLoadingMovies) {
+    return <Loading />
+  }
+
+  if (loadError) {
+    return (
+      <>
+        <Ttile text1="Add" text2="Shows" />
+        <div className='mt-10 rounded-lg border border-red-500/30 bg-red-500/10 p-5 max-w-xl'>
+          <p className='text-lg font-medium'>Unable to load now playing movies</p>
+          <p className='text-sm text-gray-300 mt-2'>{loadError}</p>
+          <button
+            onClick={fetchnowPlayingMovies}
+            className='mt-4 bg-primary text-white px-5 py-2 rounded hover:bg-primary/90 transition-all cursor-pointer'
+          >
+            Try Again
+          </button>
+        </div>
+      </>
+    )
+  }
 
   return nowPlayingMovies.length>0?(
     <>
@@ -175,7 +209,21 @@ const AddShows = () => {
        <button onClick={handleSubmit} disabled={addingshow}
        className='bg-primary text-white px-8 py-2 mt-6 rounded hover:bg-primary/90 transition-all cursor-pointer'>Add Show</button>
     </>
-  ) : <Loading />
+  ) : (
+    <>
+      <Ttile text1="Add" text2="Shows" />
+      <div className='mt-10 rounded-lg border border-primary/20 bg-primary/5 p-5 max-w-xl'>
+        <p className='text-lg font-medium'>No now playing movies found</p>
+        <p className='text-sm text-gray-300 mt-2'>The TMDB request succeeded, but no movies were returned for now.</p>
+        <button
+          onClick={fetchnowPlayingMovies}
+          className='mt-4 bg-primary text-white px-5 py-2 rounded hover:bg-primary/90 transition-all cursor-pointer'
+        >
+          Refresh
+        </button>
+      </div>
+    </>
+  )
 }
 
 export default AddShows
